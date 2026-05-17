@@ -6,7 +6,7 @@ from telegram.ext import Application, CommandHandler, ContextTypes
 # ============ ВАШ ТОКЕН ============
 TOKEN = "8599574987:AAFIZrNJYkqSCUNyzk_2f4XtDUmysbJwA9k"
 
-# ============ ТЕКСТ С ВАШЕГО PDF ============
+# ============ ПОЛНЫЙ ТЕКСТ ИЗ ФАЙЛА ============
 FULL_TEXT = """
 1.1. точки локального экстремума функции нескольких переменных;
 1.2. функции y = f(x), заданной неявно уравнением F(x, y) = 0;
@@ -143,7 +143,7 @@ def get_type_name(item_type: str) -> str:
     """Возвращает русское название типа"""
     names = {
         'definition': 'Определение',
-        'theorem': 'Теорема',
+        'theorem': 'Теорема (с доказательством)',
         'question': 'Вопрос/Задача',
         'integral_task': 'Задача (кратные интегралы)',
         'other': 'Материал'
@@ -159,13 +159,23 @@ theorems = [item for item in all_items if get_type_from_number(item['number']) =
 questions = [item for item in all_items if get_type_from_number(item['number']) == 'question']
 integral_tasks = [item for item in all_items if get_type_from_number(item['number']) == 'integral_task']
 
-print(f"📊 Загружено: определений - {len(definitions)}, теорем - {len(theorems)}, вопросов - {len(questions)}, задач по интегралам - {len(integral_tasks)}")
+print("=" * 50)
+print("🤖 Бот по математическому анализу")
+print("=" * 50)
+print(f"📖 Определений: {len(definitions)}")
+print(f"📐 Теорем: {len(theorems)}")
+print(f"❓ Вопросов/задач: {len(questions)}")
+print(f"🔢 Задач по интегралам: {len(integral_tasks)}")
+print(f"📚 Всего материалов: {len(all_items)}")
+print("=" * 50)
+print("✅ Бот готов к работе!")
+print("=" * 50)
 
 # ============ КОМАНДЫ БОТА ============
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
-        "📚 **Привет! Я бот для подготовки по матанализу**\n\n"
+        "📚 **Привет! Я бот для подготовки по математическому анализу**\n\n"
         "Я умею выдавать случайные материалы разных типов:\n\n"
         "📖 `/def` — случайное определение\n"
         "📐 `/th` — случайную теорему (с доказательством)\n"
@@ -174,6 +184,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "🎲 `/rand` — совершенно случайный материал любого типа\n"
         "📊 `/stats` — статистику\n"
         "🆘 `/help` — эту справку\n\n"
+        "➕ **Короткие команды:** `/d`, `/t`, `/qq`, `/i`, `/r`\n\n"
         "Удачи в подготовке! 🍀",
         parse_mode="Markdown"
     )
@@ -184,7 +195,7 @@ async def random_definition(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
     item = random.choice(definitions)
     await update.message.reply_text(
-        f"📖 **Определение** (п.{item['number']}):\n\n{item['text']}",
+        f"📖 **Определение** (п. {item['number']}):\n\n{item['text']}",
         parse_mode="Markdown"
     )
 
@@ -194,7 +205,7 @@ async def random_theorem(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
     item = random.choice(theorems)
     await update.message.reply_text(
-        f"📐 **Теорема** (п.{item['number']}):\n\n{item['text']}",
+        f"📐 **Теорема** (п. {item['number']}):\n\n{item['text']}",
         parse_mode="Markdown"
     )
 
@@ -204,7 +215,7 @@ async def random_question(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
     item = random.choice(questions)
     await update.message.reply_text(
-        f"❓ **Вопрос/Задача** (п.{item['number']}):\n\n{item['text']}",
+        f"❓ **Вопрос/Задача** (п. {item['number']}):\n\n{item['text']}",
         parse_mode="Markdown"
     )
 
@@ -214,7 +225,7 @@ async def random_integral(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
     item = random.choice(integral_tasks)
     await update.message.reply_text(
-        f"🔢 **Задача (кратные интегралы)** (п.{item['number']}):\n\n{item['text']}",
+        f"🔢 **Задача (кратные интегралы)** (п. {item['number']}):\n\n{item['text']}",
         parse_mode="Markdown"
     )
 
@@ -228,7 +239,7 @@ async def random_any(update: Update, context: ContextTypes.DEFAULT_TYPE):
     type_name = get_type_name(item_type)
     
     await update.message.reply_text(
-        f"{emoji} **{type_name}** (п.{item['number']}):\n\n{item['text']}",
+        f"{emoji} **{type_name}** (п. {item['number']}):\n\n{item['text']}",
         parse_mode="Markdown"
     )
 
@@ -240,21 +251,22 @@ async def stats(update: Update, context: ContextTypes.DEFAULT_TYPE):
         f"❓ Вопросов/задач: {len(questions)}\n"
         f"🔢 Задач по интегралам: {len(integral_tasks)}\n"
         f"━━━━━━━━━━━━━━━━\n"
-        f"📚 **Всего:** {len(all_items)}",
+        f"📚 **Всего материалов:** {len(all_items)}",
         parse_mode="Markdown"
     )
 
 async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
         "📖 **Доступные команды:**\n\n"
-        "📖 `/def` — случайное определение\n"
-        "📐 `/th` — случайная теорема\n"
-        "❓ `/q` — случайный вопрос/задача\n"
-        "🔢 `/int` — случайная задача по интегралам\n"
-        "🎲 `/rand` — случайный материал любого типа\n"
+        "📖 `/def` или `/d` — случайное определение\n"
+        "📐 `/th` или `/t` — случайная теорема (с доказательством)\n"
+        "❓ `/q` или `/qq` — случайный вопрос/задача\n"
+        "🔢 `/int` или `/i` — случайная задача по интегралам\n"
+        "🎲 `/rand` или `/r` — случайный материал любого типа\n"
         "📊 `/stats` — статистика\n"
         "🆘 `/help` — эта справка\n\n"
-        "➕ **Короткие команды:** `/d`, `/t`, `/qq`, `/i`, `/r`",
+        "💡 **Совет:** Используйте короткие команды для быстрого доступа!\n\n"
+        "📚 **Всего в базе:** " + str(len(all_items)) + " материалов",
         parse_mode="Markdown"
     )
 
@@ -280,7 +292,10 @@ def main():
     app.add_handler(CommandHandler("i", random_integral))
     app.add_handler(CommandHandler("r", random_any))
     
-    print("🤖 Бот запущен!")
+    print("\n🚀 Бот запущен и работает!")
+    print("📱 Найдите бота в Telegram и отправьте /start")
+    print("⏹️ Для остановки нажмите Ctrl+C\n")
+    
     app.run_polling()
 
 if __name__ == "__main__":
