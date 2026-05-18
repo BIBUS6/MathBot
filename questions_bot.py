@@ -4,7 +4,7 @@ from telegram import Update
 from telegram.ext import Application, CommandHandler, ContextTypes
 
 # ============ ВАШ ТОКЕН ============
-TOKEN = "ВСТАВЬТЕ_ВАШ_ТОКЕН_СЮДА"
+TOKEN = "8599574987:AAFIZrNJYkqSCUNyzk_2f4XtDUmysbJwA9k"
 
 # ============ ПОЛНЫЙ ТЕКСТ ИЗ ФАЙЛА ============
 FULL_TEXT = """
