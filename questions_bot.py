@@ -4,72 +4,59 @@ import os
 from telegram import Update
 from telegram.ext import Application, CommandHandler, ContextTypes
 
-# Попытка импортировать PyPDF2 (если установлен)
+# Импорт для работы с PDF
 try:
     import PyPDF2
     PDF_AVAILABLE = True
 except ImportError:
     PDF_AVAILABLE = False
-    print("⚠️ PyPDF2 не установлен. Установите: pip3 install PyPDF2")
-    print("⚠️ Будет использован текстовый режим (файл .txt)")
+    print("❌ Ошибка: PyPDF2 не установлен.")
+    print("Установите командой: pip3 install PyPDF2")
+    exit(1)
 
 # ============ НАСТРОЙКИ ============
 TOKEN = "8599574987:AAFIZrNJYkqSCUNyzk_2f4XtDUmysbJwA9k"
 PDF_FILE = "Математический_Анализ_2_семестр.pdf"  # Имя вашего PDF-файла
-TXT_FILE = "questions.txt"  # Резервный текстовый файл
 
-# ============ ФУНКЦИИ ДЛЯ ЧТЕНИЯ ФАЙЛА ============
+# ============ ФУНКЦИИ ДЛЯ ЧТЕНИЯ PDF ============
 
 def extract_text_from_pdf(pdf_path: str) -> str:
     """Извлекает текст из PDF-файла"""
-    if not PDF_AVAILABLE:
-        return ""
-    
     text = ""
     try:
         with open(pdf_path, 'rb') as file:
             reader = PyPDF2.PdfReader(file)
-            for page in reader.pages:
+            print(f"📄 Найдено страниц: {len(reader.pages)}")
+            for i, page in enumerate(reader.pages, 1):
                 page_text = page.extract_text()
                 if page_text:
                     text += page_text + "\n"
+                print(f"   Страница {i}: {len(page_text) if page_text else 0} символов")
         return text
+    except FileNotFoundError:
+        print(f"❌ Файл не найден: {pdf_path}")
+        return ""
     except Exception as e:
         print(f"❌ Ошибка при чтении PDF: {e}")
         return ""
 
-def extract_text_from_txt(txt_path: str) -> str:
-    """Извлекает текст из TXT-файла"""
-    try:
-        with open(txt_path, 'r', encoding='utf-8') as file:
-            return file.read()
-    except FileNotFoundError:
-        return ""
-    except Exception as e:
-        print(f"❌ Ошибка при чтении TXT: {e}")
-        return ""
-
 def load_text() -> str:
-    """Загружает текст из доступного источника (PDF -> TXT)"""
-    # Пробуем загрузить из PDF
-    if PDF_AVAILABLE and os.path.exists(PDF_FILE):
-        print(f"📄 Читаем PDF: {PDF_FILE}")
-        text = extract_text_from_pdf(PDF_FILE)
-        if text:
-            print(f"✅ Загружено {len(text)} символов из PDF")
-            return text
+    """Загружает текст из PDF-файла"""
+    if not os.path.exists(PDF_FILE):
+        print(f"❌ Файл {PDF_FILE} не найден!")
+        print(f"📁 Текущая папка: {os.getcwd()}")
+        print("Поместите PDF-файл в ту же папку, что и бот")
+        return ""
     
-    # Если PDF нет или не удалось прочитать, пробуем TXT
-    if os.path.exists(TXT_FILE):
-        print(f"📄 Читаем TXT: {TXT_FILE}")
-        text = extract_text_from_txt(TXT_FILE)
-        if text:
-            print(f"✅ Загружено {len(text)} символов из TXT")
-            return text
+    print(f"📄 Читаем PDF: {PDF_FILE}")
+    text = extract_text_from_pdf(PDF_FILE)
     
-    # Если ничего не загрузилось
-    print("❌ Не удалось загрузить файл с вопросами!")
-    return ""
+    if text:
+        print(f"✅ Загружено {len(text)} символов из PDF")
+    else:
+        print("❌ Не удалось извлечь текст из PDF")
+    
+    return text
 
 # ============ ПАРСИНГ ВСЕХ ЭЛЕМЕНТОВ ============
 
@@ -86,12 +73,7 @@ def parse_all_items(text: str):
             continue
         
         # Ищем номера вида 1.1, 2.1, 3.1, 4.1.1 и т.д.
-        # Также ищем русские номера с точкой (1.1., 2.1., 3.1.)
         match = re.match(r'^(\d+(?:\.\d+)+)\.?\s*(.*)', line)
-        
-        # Если не нашли, пробуем найти номера с точкой на конце (1.1. текст)
-        if not match:
-            match = re.match(r'^(\d+(?:\.\d+)+)\.\s+(.*)', line)
         
         if match:
             # Сохраняем предыдущий
@@ -156,15 +138,24 @@ print("=" * 50)
 print("🤖 Бот по математическому анализу")
 print("=" * 50)
 
-# Загружаем текст из файла
+# Загружаем текст из PDF
 raw_text = load_text()
 
 if not raw_text:
     print("❌ Не удалось загрузить материалы. Бот не запустится.")
+    print("Проверьте:")
+    print("  1. Файл PDF существует в папке с ботом")
+    print("  2. Установлен PyPDF2 (pip3 install PyPDF2)")
+    print("  3. PDF-файл не защищён паролем")
     exit(1)
 
 # Парсим все элементы
 all_items = parse_all_items(raw_text)
+
+if not all_items:
+    print("❌ Не удалось распарсить материалы из PDF.")
+    print("Возможно, PDF имеет нестандартную структуру или битую кодировку.")
+    exit(1)
 
 # Создаём отдельные списки по типам
 definitions = [item for item in all_items if get_type_from_number(item['number']) == 'definition']
@@ -172,6 +163,7 @@ theorems = [item for item in all_items if get_type_from_number(item['number']) =
 questions = [item for item in all_items if get_type_from_number(item['number']) == 'question']
 integral_tasks = [item for item in all_items if get_type_from_number(item['number']) == 'integral_task']
 
+print("-" * 50)
 print(f"📖 Определений: {len(definitions)}")
 print(f"📐 Теорем: {len(theorems)}")
 print(f"❓ Вопросов/задач: {len(questions)}")
@@ -280,29 +272,22 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         parse_mode="Markdown"
     )
 
-# Команда для перезагрузки вопросов из файла (только для админа)
+# Команда для перезагрузки PDF (без проверки на админа)
 async def reload(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Перезагружает вопросы из файла (только для админа)"""
+    """Перезагружает материалы из PDF"""
     global all_items, definitions, theorems, questions, integral_tasks
     
-    # ID администратора (замените на свой Telegram ID)
-    ADMIN_ID = egoryyaan  # ← ВСТАВЬТЕ ВАШ TELEGRAM ID
-    
-    if update.effective_user.id != ADMIN_ID:
-        await update.message.reply_text("❌ У вас нет прав для этой команды")
-        return
-    
-    await update.message.reply_text("🔄 Перезагрузка материалов из файла...")
+    await update.message.reply_text("🔄 Перезагрузка материалов из PDF...")
     
     raw_text = load_text()
     if not raw_text:
-        await update.message.reply_text("❌ Не удалось загрузить файл")
+        await update.message.reply_text("❌ Не удалось загрузить PDF-файл")
         return
     
     new_items = parse_all_items(raw_text)
     
     if not new_items:
-        await update.message.reply_text("❌ Не удалось распарсить материалы")
+        await update.message.reply_text("❌ Не удалось распарсить материалы из PDF")
         return
     
     # Обновляем глобальные переменные
@@ -313,7 +298,7 @@ async def reload(update: Update, context: ContextTypes.DEFAULT_TYPE):
     integral_tasks = [item for item in all_items if get_type_from_number(item['number']) == 'integral_task']
     
     await update.message.reply_text(
-        f"✅ Материалы перезагружены!\n\n"
+        f"✅ Материалы перезагружены из PDF!\n\n"
         f"📖 Определений: {len(definitions)}\n"
         f"📐 Теорем: {len(theorems)}\n"
         f"❓ Вопросов/задач: {len(questions)}\n"
@@ -335,7 +320,7 @@ def main():
     app.add_handler(CommandHandler("rand", random_any))
     app.add_handler(CommandHandler("stats", stats))
     app.add_handler(CommandHandler("help", help_command))
-    app.add_handler(CommandHandler("reload", reload))  # Команда для перезагрузки
+    app.add_handler(CommandHandler("reload", reload))  # Теперь доступна всем
     
     # Короткие синонимы
     app.add_handler(CommandHandler("d", random_definition))
