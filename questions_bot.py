@@ -286,7 +286,7 @@ async def reload(update: Update, context: ContextTypes.DEFAULT_TYPE):
     global all_items, definitions, theorems, questions, integral_tasks
     
     # ID администратора (замените на свой Telegram ID)
-    ADMIN_ID = @egoryyaan  # ← ВСТАВЬТЕ ВАШ TELEGRAM ID
+    ADMIN_ID = egoryyaan  # ← ВСТАВЬТЕ ВАШ TELEGRAM ID
     
     if update.effective_user.id != ADMIN_ID:
         await update.message.reply_text("❌ У вас нет прав для этой команды")
